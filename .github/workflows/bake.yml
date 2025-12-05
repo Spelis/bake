@@ -24,7 +24,7 @@ jobs:
       run: make
     - name: Create version tag
       run: |
-        VERSION="v$(date +%Y%m%d%H%M)"
+        VERSION="v$(date +%Y.%m.%d.%H.%M)"
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git tag $VERSION
