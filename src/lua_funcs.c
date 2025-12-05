@@ -1,9 +1,7 @@
 #include "lua_funcs.h"
 
 #include <dirent.h>
-#include <lauxlib.h>
 #include <libgen.h>
-#include <lua.h>
 #include <lua5.3/lauxlib.h>
 #include <lua5.3/lua.h>
 #include <stdbool.h>

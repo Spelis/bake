@@ -1,7 +1,7 @@
 #include "log.h"
 
 #include <lauxlib.h>
-#include <lua.h>
+#include <lua5.3/lua.h>
 #include <stdio.h>
 
 static int g_indent = 0;

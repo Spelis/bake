@@ -1,6 +1,6 @@
 #pragma once
 
-#include <lua.h>
+#include <lua5.3/lua.h>
 
 int l_bake(lua_State* L);
 int l_recipe(lua_State* L);

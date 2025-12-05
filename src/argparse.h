@@ -1,6 +1,6 @@
 #pragma once
 
-#include <lua.h>
+#include <lua5.3/lua.h>
 typedef struct {
 	int force;
 	const char* file;

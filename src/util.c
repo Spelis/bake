@@ -1,7 +1,7 @@
 #include "util.h"
 
-#include <lua.h>
 #include <lua5.3/lauxlib.h>
+#include <lua5.3/lua.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

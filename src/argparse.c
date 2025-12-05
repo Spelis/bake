@@ -1,6 +1,6 @@
 #include "argparse.h"
 
-#include <lua.h>
+#include <lua5.3/lua.h>
 #include <stdlib.h>
 #include <string.h>
 
