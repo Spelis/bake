@@ -1,0 +1,28 @@
+name: Bake C CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Lua 5.3
+      run: |
+        sudo apt update
+        sudo apt install -y lua5.3 liblua5.3-dev
+    - name: make
+      run: make
+    - name: bake
+      run: ./build/bake
+    - name: bake -B
+      run: ./build/bake -B
+    - name: bake cleanup
+      run: ./build/bake clean
