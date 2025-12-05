@@ -1,0 +1,12 @@
+#pragma once
+
+#include <lua.h>
+typedef struct {
+	int force;
+	const char* file;
+	const char* dir;
+	const char** targets;
+	int target_count;
+} BakeOptions;
+
+BakeOptions parse_args(lua_State* L, int argc, char** argv);
