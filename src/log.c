@@ -1,6 +1,6 @@
 #include "log.h"
 
-#include <lauxlib.h>
+#include <lua5.3/lauxlib.h>
 #include <lua5.3/lua.h>
 #include <stdio.h>
 
