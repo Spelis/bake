@@ -1,5 +1,6 @@
 #pragma once
 #include <lua5.3/lua.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
 
