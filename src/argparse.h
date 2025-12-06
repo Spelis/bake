@@ -1,6 +1,7 @@
 #pragma once
 
 #include <lua5.3/lua.h>
+
 typedef struct {
 	int force;
 	const char* file;
@@ -9,4 +10,4 @@ typedef struct {
 	int target_count;
 } BakeOptions;
 
-BakeOptions parse_args(lua_State* L, int argc, char** argv);
+BakeOptions parse_args(int argc, char** argv);

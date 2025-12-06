@@ -1,12 +1,12 @@
 #pragma once
 #include <lua5.3/lua.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <time.h>
 
 #include "argparse.h"
 int exists(const char* fname);
-char* read_file(const char* filename);
 
 typedef struct Recipe {
 	char* target;
@@ -20,14 +20,14 @@ typedef struct Recipe {
 
 typedef struct {
 	Recipe* data;
-	int count;
-	int capacity;
+	size_t count;
+	size_t capacity;
 } RecipeArray;
 
 typedef struct {
 	Recipe** data;
-	int count;
-	int capacity;
+	size_t count;
+	size_t capacity;
 } RecipeArrayP;
 
 extern RecipeArray recipe_arr;

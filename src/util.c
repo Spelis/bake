@@ -5,48 +5,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
 
 int exists(const char* fname) {
-	FILE* file;
-	if ((file = fopen(fname, "r"))) {
-		fclose(file);
-		return 1;
-	}
-	return 0;
-}
-
-char* read_file(const char* filename) {
-	FILE* f = fopen(filename, "rb");
-	if (!f) {
-		perror("fopen");
-		return NULL;
-	}
-
-	// move to end to get file size
-	fseek(f, 0, SEEK_END);
-	long size = ftell(f);
-	rewind(f);
-
-	// allocate buffer (+1 for null terminator)
-	char* buffer = malloc(size + 1);
-	if (!buffer) {
-		perror("malloc");
-		fclose(f);
-		return NULL;
-	}
-
-	// read file into buffer
-	size_t read_bytes = fread(buffer, 1, size, f);
-	if (read_bytes != size) {
-		perror("fread");
-		free(buffer);
-		fclose(f);
-		return NULL;
-	}
-	buffer[size] = '\0';  // null terminate
-
-	fclose(f);
-	return buffer;
+	struct stat st;
+	return stat(fname, &st) == 0;
 }
 
 RecipeArray recipe_arr;
@@ -79,7 +42,9 @@ Recipe* recipe_find(char* target) {
 }
 
 void recipes_free(lua_State* L) {
-	for (int i = 0; i < recipe_arr.count; i++) {
+	if (!recipe_arr.data) return;
+
+	for (size_t i = 0; i < recipe_arr.count; i++) {
 		Recipe* r = &recipe_arr.data[i];
 
 		// Free Lua function reference if any
@@ -87,6 +52,34 @@ void recipes_free(lua_State* L) {
 			luaL_unref(L, LUA_REGISTRYINDEX, r->function);
 			r->function = LUA_NOREF;
 		}
+
+		// Free target string
+		if (r->target) {
+			free(r->target);
+			r->target = NULL;
+		}
+
+		// Free pattern target
+		if (r->pattern_target) {
+			free(r->pattern_target);
+			r->pattern_target = NULL;
+		}
+
+		// Free dependencies
+		if (r->dependencies) {
+			for (int j = 0; j < r->deplen; j++) {
+				if (r->dependencies[j]) {
+					free(r->dependencies[j]);
+					r->dependencies[j] = NULL;
+				}
+			}
+			free(r->dependencies);
+			r->dependencies = NULL;
+		}
+
+		// Don't free pattern dependencies
+
+		r->deplen = 0;
 	}
 
 	// Free the array itself

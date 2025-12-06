@@ -1,6 +1,6 @@
 local target = "bake"
-local ccflags = ""
-local ldflags = "-llua5.3"
+local ccflags = "-g"
+local ldflags = "-g -llua5.3"
 
 -- neat utility functions :P
 local src = pantry.collect("src", ".c")

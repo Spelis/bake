@@ -42,8 +42,8 @@ Should be pretty easy to understand, read the `bake.lua` file for a base, here a
 - `bake(default_targets)`: Executes all recipes inside the table, or from command line arguments
 - `yell(str)`: Just an alias for `print`
 - `whisk(cmd)`: Runs a shell command
-- `pantry(dir?)`: Basically `ls`
-- `pantry.buy(filename)`: (No i couldn't come up with a better name) Creates an empty file
+- `pantry(dir?)`: List a directory
+- `pantry.create(filename)`: Creates an empty file
 - `pantry.trash(filename)`: Deletes a file
 - `pantry.create_shelf(dirname)`: Creates a new directory
 - `pantry.is_shelf(path)`: Checks if something is a directory

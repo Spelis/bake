@@ -1,12 +1,11 @@
 #include "argparse.h"
 
-#include <lua5.3/lua.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "log.h"
 
-BakeOptions parse_args(lua_State* L, int argc, char** argv) {
+BakeOptions parse_args(int argc, char** argv) {
 	BakeOptions opts = {0, "bake.lua", NULL, NULL, 0};
 	const char** targets = malloc(sizeof(char*) * argc);
 	int tcount = 0;

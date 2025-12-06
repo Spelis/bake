@@ -1,7 +1,5 @@
 #include "log.h"
 
-#include <lua5.3/lauxlib.h>
-#include <lua5.3/lua.h>
 #include <stdio.h>
 
 static int g_indent = 0;
@@ -13,15 +11,26 @@ int indent_log(int delta) {
 }
 
 void LOG(const char* fmt, ...) {
-	int ind = g_indent * LOG_INDENT;
+	int ind = g_indent * 2;
+	char buffer[2048];
 
-	for (int i = 0; i < ind; i++) fputc(' ', stderr);
-
-	/* message */
 	va_list ap;
 	va_start(ap, fmt);
-	vfprintf(stderr, fmt, ap);
+	vsnprintf(buffer, sizeof(buffer), fmt, ap);
 	va_end(ap);
 
+	const char* p = buffer;
+	int at_start = 1;
+	while (*p) {
+		if (at_start) {
+			for (int i = 0; i < ind; i++) fputc(' ', stderr);
+			at_start = 0;
+		}
+		fputc(*p, stderr);
+		if (*p == '\n') {
+			at_start = 1;
+		}
+		p++;
+	}
 	fputc('\n', stderr);
 }

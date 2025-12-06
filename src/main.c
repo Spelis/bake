@@ -14,13 +14,11 @@ static const luaL_Reg bake_lib[] = {{"bake", l_bake},	{"recipe", l_recipe},
 BakeOptions args;
 
 int main(int argc, char* argv[]) {
+	args = parse_args(argc, argv);
+
 	recipe_arr.data = NULL;
 	recipe_arr.count = 0;
 	recipe_arr.capacity = 0;
-
-	lua_State* L = luaL_newstate();
-
-	args = parse_args(L, argc, argv);
 
 	if (!exists(args.file)) {
 		LOG("\x1b[31mFile \"%s\" doesn't exist but is required for Bake to "
@@ -29,10 +27,7 @@ int main(int argc, char* argv[]) {
 		return 1;
 	}
 
-	luaopen_base(L);
-	luaopen_string(L);
-	luaopen_table(L);
-	luaopen_math(L);
+	lua_State* L = luaL_newstate();
 	luaL_openlibs(L);
 	lua_pushnil(L);
 	lua_setglobal(L, "print");
@@ -43,7 +38,7 @@ int main(int argc, char* argv[]) {
 	lua_newtable(L);  // create pantry table
 
 	lua_pushcfunction(L, l_buy);
-	lua_setfield(L, -2, "buy");	 // pantry.buy = l_buy
+	lua_setfield(L, -2, "create");	// pantry.create = l_buy, etc..
 
 	lua_pushcfunction(L, l_trash);
 	lua_setfield(L, -2, "trash");
@@ -66,8 +61,13 @@ int main(int argc, char* argv[]) {
 	lua_setmetatable(L, -2);		// set metatable for pantry table
 
 	lua_setglobal(L, "pantry");	 // set pantry table as global
-	if (luaL_loadfile(L, "bake.lua") || lua_pcall(L, 0, 0, 0)) {
-		LOG("Error: %s\n", lua_tostring(L, -1));
+	if (luaL_loadfile(L, args.file) || lua_pcall(L, 0, 0, 0)) {
+		const char* err = lua_tostring(L, -1);
+		LOG("\x1b[31mError loading/executing %s: %s\x1b[0m", args.file, err);
+		lua_pop(L, 1);
+		recipes_free(L);
+		lua_close(L);
+		return 1;
 	}
 
 	recipes_free(L);
