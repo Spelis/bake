@@ -28,7 +28,6 @@ BakeOptions parse_args(int argc, char** argv) {
 		.dir = NULL,
 		.targets = NULL,
 		.target_count = 0,
-		.output_cmd_json = 0,
 		.keep_defaults = 0,
 	};
 
