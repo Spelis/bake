@@ -16,6 +16,7 @@
 #include "util.h"
 
 static RecipeArrayP visited = {NULL, 0, 0};
+static int successful = 0;
 
 bool is_out_of_date(const char* target, char** deps, int deplen) {
 	struct stat st_target;
@@ -223,7 +224,11 @@ void build(lua_State* L, const char* target) {
 	indent_log(1);
 	if (lua_pcall(L, 2, 1, 0) != LUA_OK) {
 		const char* err = lua_tostring(L, -1);
-		LOG("Error calling function: %s", err);
+		LOG("\x1b[31mError calling function: %s\x1b[0m", err);
+		if (successful == 2) {
+			indent_log(-10);
+			LOG("\x1b[33mThe cake has been cancelled.\x1b[0m");
+		}
 		indent_log(-1);
 		lua_pop(L, 1);
 		build_cleanup();
@@ -241,7 +246,7 @@ int l_bake(lua_State* L) {
 
 	lua_pushnil(L);
 	LOG("\x1b[33mBaking...\x1b[0m");
-	if (args.target_count == 0) {
+	if (args.target_count == 0 || args.keep_defaults == 1) {
 		while (lua_next(L, 1) != 0) {
 			if (lua_type(L, -1) == LUA_TSTRING) {
 				indent_log(1);
@@ -251,7 +256,9 @@ int l_bake(lua_State* L) {
 			}
 			lua_pop(L, 1);
 		}
-	} else {
+	}
+	// forgive me for this warcrime.
+	if (args.target_count >= 1) {
 		for (int i = 0; i < args.target_count; i++) {
 			indent_log(1);
 			build(L, args.targets[i]);
@@ -261,7 +268,13 @@ int l_bake(lua_State* L) {
 
 	build_cleanup();
 
-	LOG("\x1b[33mThe cake is ready.\x1b[0m");
+	if (successful == 0) {
+		LOG("\x1b[33mThe cake is ready.\x1b[0m");
+	} else if (successful == 1) {
+		LOG("\x1b[33mThe cake might be malformed.\x1b[0m");
+	} else {
+		LOG("\x1b[33mThe cake is burnt.\x1b[0m");
+	}
 	return 0;
 }
 
@@ -342,6 +355,33 @@ int l_yell(lua_State* L) {
 	return 0;
 }
 
+int lw_handle_error(lua_State* L) {
+	// upvalue 1 = result table
+	luaL_checktype(L, lua_upvalueindex(1), LUA_TTABLE);
+
+	// argument 1 = boolean flag
+	luaL_checktype(L, 1, LUA_TBOOLEAN);
+	int do_exit = lua_toboolean(L, 1);
+
+	// fetch return_code
+	lua_getfield(L, lua_upvalueindex(1), "return_code");
+	int rc = luaL_optinteger(L, -1, 0);
+	lua_pop(L, 1);
+
+	if (rc == 0) {
+		successful = 0;	 // all good
+		return 0;
+	}
+
+	if (do_exit) {
+		successful = 2;	 // catastrophic failure
+		return luaL_error(L, "fatal error (return_code=%d)", rc);
+	}
+
+	successful = 1;	 // warning, continue
+	return 0;
+}
+
 int l_whisk(lua_State* L) {
 	const char* cmd = luaL_checkstring(L, 1);  // safe check
 
@@ -387,6 +427,9 @@ int l_whisk(lua_State* L) {
 	lua_setfield(L, -2, "return_code");
 	lua_pushstring(L, output);
 	lua_setfield(L, -2, "output");
+	lua_pushvalue(L, -1);
+	lua_pushcclosure(L, lw_handle_error, 1);
+	lua_setfield(L, -2, "err");
 
 	free(output);
 	return 1;

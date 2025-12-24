@@ -8,6 +8,7 @@ typedef struct {
 	const char* dir;
 	const char** targets;
 	int target_count;
+	int keep_defaults;
 } BakeOptions;
 
 BakeOptions parse_args(int argc, char** argv);
