@@ -1,3 +1,5 @@
+This project has been migrated to https://git.spelis.projnull.eu/bake
+
 # Bake | The Bakery-themed Build System.
 
 Bake is a lightweight build system written in C. It allows you to define recipes, wildcard rules, and dependencies, similar to Make, but with Lua scripting flexibility.
