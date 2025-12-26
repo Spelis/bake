@@ -1,17 +1,17 @@
-#include "log.h"
-
 #include <stdio.h>
 
-static int g_indent = 0;
+#include "bake.h"
+
+int indentation = 0;
 
 int indent_log(int delta) {
-	g_indent += delta;
-	if (g_indent < 0) g_indent = 0;
-	return g_indent;
+	indentation += delta;
+	if (indentation < 0) indentation = 0;
+	return indentation;
 }
 
 void LOG(const char* fmt, ...) {
-	int ind = g_indent * 2;
+	int ind = indentation * 2;
 	char buffer[2048];
 
 	va_list ap;

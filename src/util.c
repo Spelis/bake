@@ -1,11 +1,11 @@
-#include "util.h"
-
 #include <lua5.3/lauxlib.h>
 #include <lua5.3/lua.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+#include "bake.h"
 
 int exists(const char* fname) {
 	struct stat st;
@@ -47,25 +47,21 @@ void recipes_free(lua_State* L) {
 	for (size_t i = 0; i < recipe_arr.count; i++) {
 		Recipe* r = &recipe_arr.data[i];
 
-		// Free Lua function reference if any
 		if (r->function != LUA_NOREF) {
 			luaL_unref(L, LUA_REGISTRYINDEX, r->function);
 			r->function = LUA_NOREF;
 		}
 
-		// Free target string
 		if (r->target) {
 			free(r->target);
 			r->target = NULL;
 		}
 
-		// Free pattern target
 		if (r->pattern_target) {
 			free(r->pattern_target);
 			r->pattern_target = NULL;
 		}
 
-		// Free dependencies
 		if (r->dependencies) {
 			for (int j = 0; j < r->deplen; j++) {
 				if (r->dependencies[j]) {
@@ -77,12 +73,9 @@ void recipes_free(lua_State* L) {
 			r->dependencies = NULL;
 		}
 
-		// Don't free pattern dependencies
-
 		r->deplen = 0;
 	}
 
-	// Free the array itself
 	free(recipe_arr.data);
 	recipe_arr.data = NULL;
 	recipe_arr.count = 0;

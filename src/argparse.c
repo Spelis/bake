@@ -1,9 +1,7 @@
-#include "argparse.h"
-
 #include <stdlib.h>
 #include <string.h>
 
-#include "log.h"
+#include "bake.h"
 
 #ifndef VERSION
 #define VERSION "Unknown"

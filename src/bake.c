@@ -1,17 +1,15 @@
+#include "bake.h"
+
 #include <lua5.3/lauxlib.h>
 #include <lua5.3/lua.h>
 #include <lua5.3/lualib.h>
-
-#include "argparse.h"
-#include "log.h"
-#include "lua_funcs.h"
-#include "util.h"
 
 static const luaL_Reg bake_lib[] = {{"bake", l_bake},	{"recipe", l_recipe},
 									{"whisk", l_whisk}, {"yell", l_yell},
 									{"print", l_yell},	{NULL, NULL}};
 
 BakeOptions args;
+int successful = 0;
 
 int main(int argc, char* argv[]) {
 	args = parse_args(argc, argv);
