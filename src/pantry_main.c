@@ -2,6 +2,7 @@
 #include <errno.h>
 #include <lua5.3/lauxlib.h>
 #include <lua5.3/lua.h>
+#include <lua5.3/lualib.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -9,19 +10,13 @@
 
 #include "bake.h"
 
-int l_yell(lua_State* L) {
-	const char* msg = luaL_checkstring(L, 1);
-	LOG("%s", msg);
-	return 0;
-}
-
 int l_buy(lua_State* L) {
 	const char* path = lua_tostring(L, 1);
 	if (!path) return luaL_error(L, "Expected path string");
 	FILE* f = fopen(path, "a");
 	if (!f) return luaL_error(L, "Cannot create file %s", path);
 	fclose(f);
-	LOG("\x1b[2;90mCreated %s\x1b[0m", path);
+	print("\x1b[2;90mCreated %s\x1b[0m", path);
 	return 0;
 }
 
@@ -31,7 +26,7 @@ int l_trash(lua_State* L) {
 		return luaL_error(L, "Failed to remove '%s': %s", path,
 						  strerror(errno));
 	}
-	LOG("\x1b[2;90mDeleted %s\x1b[0m", path);
+	print("\x1b[2;90mDeleted %s\x1b[0m", path);
 	return 0;
 }
 
@@ -62,7 +57,7 @@ int l_create_shelf(lua_State* L) {
 	}
 
 	free(tmp);
-	LOG("\x1b[2;90mCreated %s/\x1b[0m", path);
+	print("\x1b[2;90mCreated %s/\x1b[0m", path);
 	return 0;
 }
 

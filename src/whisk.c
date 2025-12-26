@@ -1,11 +1,7 @@
 #include <lua5.3/lauxlib.h>
-#include <lua5.3/lua.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <sys/wait.h>
 
 #include "bake.h"
-
 int lw_handle_error(lua_State* L) {
 	// upvalue 1 = result table
 	luaL_checktype(L, lua_upvalueindex(1), LUA_TTABLE);
@@ -20,23 +16,25 @@ int lw_handle_error(lua_State* L) {
 	lua_pop(L, 1);
 
 	if (rc == 0) {
-		successful = 0;	 // all good
 		return 0;
 	}
 
 	if (do_exit) {
-		successful = 2;	 // catastrophic failure
-		return luaL_error(L, "fatal error (return_code=%d)", rc);
+		return luaL_error(
+			L, "Fatal error occured while running shell command (code %d)", rc);
 	}
 
-	successful = 1;	 // warning, continue
+	print(
+		"\x1b[33mWarning: Error occured while running shell command (code "
+		"%d)\x1b[0m",
+		rc);
 	return 0;
 }
 
 int l_whisk(lua_State* L) {
 	const char* cmd = luaL_checkstring(L, 1);  // safe check
 
-	LOG("\x1b[2;90m$ %s\x1b[0m", cmd);
+	print("\x1b[2;90m$ %s\x1b[0m", cmd);
 
 	FILE* pipe = popen(cmd, "r");
 	if (!pipe) return luaL_error(L, "Failed to run command");

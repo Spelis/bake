@@ -3,13 +3,18 @@
 #include <lua5.3/lauxlib.h>
 #include <lua5.3/lua.h>
 #include <lua5.3/lualib.h>
+#include <sys/stat.h>
+
+int exists(const char* fname) {
+	struct stat st;
+	return stat(fname, &st) == 0;
+}
 
 static const luaL_Reg bake_lib[] = {{"bake", l_bake},	{"recipe", l_recipe},
 									{"whisk", l_whisk}, {"yell", l_yell},
 									{"print", l_yell},	{NULL, NULL}};
 
 BakeOptions args;
-int successful = 0;
 
 int main(int argc, char* argv[]) {
 	args = parse_args(argc, argv);
@@ -19,7 +24,8 @@ int main(int argc, char* argv[]) {
 	recipe_arr.capacity = 0;
 
 	if (!exists(args.file)) {
-		LOG("\x1b[31mFile \"%s\" doesn't exist but is required for Bake to "
+		print(
+			"\x1b[31mFile \"%s\" doesn't exist but is required for Bake to "
 			"work.\x1b[0m",
 			args.file);
 		return 1;
@@ -61,7 +67,7 @@ int main(int argc, char* argv[]) {
 	lua_setglobal(L, "pantry");	 // set pantry table as global
 	if (luaL_loadfile(L, args.file) || lua_pcall(L, 0, 0, 0)) {
 		const char* err = lua_tostring(L, -1);
-		LOG("\x1b[31mError loading/executing %s: %s\x1b[0m", args.file, err);
+		print("\x1b[31mError loading/executing %s: %s\x1b[0m", args.file, err);
 		lua_pop(L, 1);
 		recipes_free(L);
 		lua_close(L);

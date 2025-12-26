@@ -1,8 +1,15 @@
-#include <stdio.h>
+#include <lua5.3/lauxlib.h>
 
 #include "bake.h"
 
-int indentation = 0;
+// i'll stick it in here just because, it has to do with logging
+int l_yell(lua_State* L) {
+	const char* msg = luaL_checkstring(L, 1);
+	print("%s", msg);
+	return 0;
+}
+
+static int indentation = 0;
 
 int indent_log(int delta) {
 	indentation += delta;
@@ -10,7 +17,7 @@ int indent_log(int delta) {
 	return indentation;
 }
 
-void LOG(const char* fmt, ...) {
+void print(const char* fmt, ...) {
 	int ind = indentation * 2;
 	char buffer[2048];
 

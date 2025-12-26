@@ -31,7 +31,7 @@ BakeOptions parse_args(int argc, char** argv) {
 
 	const char** targets = malloc(sizeof(char*) * argc);
 	if (!targets) {
-		LOG("Out of memory");
+		print("Out of memory");
 		exit(1);
 	}
 
@@ -40,19 +40,19 @@ BakeOptions parse_args(int argc, char** argv) {
 	for (int i = 1; i < argc; i++) {
 		/* exit-immediately flags */
 		if (strcmp(argv[i], "-h") == 0) {
-			LOG(HELP_STR);
+			print(HELP_STR);
 			exit(0);
 		}
 
 		if (strcmp(argv[i], "-v") == 0) {
-			LOG("Bake version: %s", VERSION);
+			print("Bake version: %s", VERSION);
 			exit(0);
 		}
 
 		/* flags with arguments */
 		if (strcmp(argv[i], "-f") == 0) {
 			if (++i >= argc) {
-				LOG("Option -f requires a filename");
+				print("Option -f requires a filename");
 				exit(1);
 			}
 			opts.file = argv[i];
@@ -61,7 +61,7 @@ BakeOptions parse_args(int argc, char** argv) {
 
 		if (strcmp(argv[i], "-C") == 0) {
 			if (++i >= argc) {
-				LOG("Option -C requires a directory");
+				print("Option -C requires a directory");
 				exit(1);
 			}
 			opts.dir = argv[i];
@@ -86,7 +86,7 @@ BakeOptions parse_args(int argc, char** argv) {
 		}
 
 		/* unknown option */
-		LOG("Unknown option: %s", argv[i]);
+		print("Unknown option: %s", argv[i]);
 		exit(1);
 	}
 

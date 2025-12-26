@@ -1,10 +1,11 @@
 #include <dirent.h>
 #include <errno.h>
 #include <lua5.3/lauxlib.h>
-#include <lua5.3/lua.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+#include "bake.h"
 
 static void collect_impl(lua_State* L, const char* dir, const char* pattern,
 						 int* index) {

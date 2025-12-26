@@ -1,5 +1,8 @@
 #include <dirent.h>
 #include <libgen.h>
+#include <lua5.3/lauxlib.h>
+#include <lua5.3/lua.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,35 +11,40 @@
 
 #include "bake.h"
 
-static RecipeArrayP visited = {0};
+static RecipeArrayP visited = {NULL, 0, 0};
 
-bool is_out_of_date(const char* target, char** deps, int deplen) {
+int is_out_of_date(const char* target, char** deps, int deplen) {
 	struct stat st_target;
-	bool target_exists = (stat(target, &st_target) == 0);
+	int target_exists = (stat(target, &st_target) == 0);
 	time_t target_mtime = target_exists ? st_target.st_mtime : 0;
 
 	for (int i = 0; i < deplen; i++) {
 		const char* dep = deps[i];
 
+		// Special dependency that always forces rebuild
 		if (strcmp(dep, "ALWAYS") == 0) {
-			return true;
+			return 1;
 		}
 
 		struct stat st_dep;
 		if (stat(dep, &st_dep) != 0) {
-			return true;
+			// Missing dependency -> assume target is out-of-date
+			return 1;
 		}
 
+		// Skip directories
 		if (S_ISDIR(st_dep.st_mode)) {
 			continue;
 		}
 
+		// If target does not exist or dependency is newer
 		if (!target_exists || st_dep.st_mtime > target_mtime) {
-			return true;
+			return 1;
 		}
 	}
 
-	return false;
+	// All dependencies older than target -> up-to-date
+	return 0;
 }
 
 void expand_wildcard_recipes(lua_State* L) {
@@ -46,15 +54,17 @@ void expand_wildcard_recipes(lua_State* L) {
 		Recipe* wildcard_recipe = &recipe_arr.data[i];
 		if (!wildcard_recipe->is_wildcard) continue;
 
-		const char* pattern_target = wildcard_recipe->pattern_target;
+		const char* pattern_target =
+			wildcard_recipe->pattern_target;  // e.g., build/%.o
 
 		for (int d = 0; d < wildcard_recipe->deplen; d++) {
-			const char* pattern_dep = wildcard_recipe->pattern_deps[d];
+			const char* pattern_dep =
+				wildcard_recipe->pattern_deps[d];  // e.g., src/%.c
 
 			char* dep_copy = strdup(pattern_dep);
 			if (!dep_copy) continue;
 
-			const char* dir = dirname(dep_copy);
+			const char* dir = dirname(dep_copy);  // scan this dir
 			DIR* dir_stream = opendir(dir);
 			free(dep_copy);
 			if (!dir_stream) continue;
@@ -68,8 +78,9 @@ void expand_wildcard_recipes(lua_State* L) {
 
 				const char* filename = entry->d_name;
 				size_t name_len = strlen(filename);
-				if (name_len <= dep_suffix_len) continue;
+				if (name_len <= dep_suffix_len) continue;  // too short
 
+				// check if filename ends with same suffix as pattern_dep
 				if (dep_suffix_len > 0 &&
 					strcmp(filename + name_len - dep_suffix_len,
 						   pattern_dep + strlen(pattern_dep) -
@@ -83,6 +94,7 @@ void expand_wildcard_recipes(lua_State* L) {
 				strncpy(stem, filename, stem_len);
 				stem[stem_len] = '\0';
 
+				// build concrete target and dependency paths
 				size_t tgt_len =
 					strlen("build/") + stem_len + strlen(target_suffix) + 1;
 				char* concrete_target = malloc(tgt_len);
@@ -104,6 +116,7 @@ void expand_wildcard_recipes(lua_State* L) {
 					pattern_dep + strlen(pattern_dep) - dep_suffix_len;
 				snprintf(concrete_dep, dep_len, "src/%s%s", stem, dep_suffix);
 
+				// create new recipe
 				Recipe new_recipe;
 				new_recipe.target = concrete_target;
 				new_recipe.dependencies = malloc(sizeof(char*));
@@ -120,7 +133,7 @@ void expand_wildcard_recipes(lua_State* L) {
 			closedir(dir_stream);
 		}
 
-		wildcard_recipe->is_wildcard = false;
+		wildcard_recipe->is_wildcard = false;  // mark as expanded
 	}
 }
 
@@ -137,7 +150,7 @@ void build_cleanup() {
 
 void build(lua_State* L, const char* target) {
 	if (!target || target[0] == '\0') {
-		LOG("ERR: Empty string passed to build");
+		print("ERR: Empty string passed to build");
 		return;
 	}
 
@@ -159,7 +172,7 @@ void build(lua_State* L, const char* target) {
 
 	if (!args.force &&
 		!is_out_of_date(recipe->target, recipe->dependencies, recipe->deplen)) {
-		LOG("\x1b[35m\"%s\"\x1b[32m is fresh, serving...\x1b[0m", target);
+		print("\x1b[35m\"%s\"\x1b[32m is fresh, serving...\x1b[0m", target);
 		return;
 	}
 
@@ -202,15 +215,11 @@ void build(lua_State* L, const char* target) {
 		lua_rawseti(L, -2, i + 1);
 	}
 
-	LOG("\x1b[34mBaking recipe \x1b[35m\"%s\"\x1b[0m", target);
+	print("\x1b[34mBaking recipe \x1b[35m\"%s\"\x1b[0m", target);
 	indent_log(1);
 	if (lua_pcall(L, 2, 1, 0) != LUA_OK) {
 		const char* err = lua_tostring(L, -1);
-		LOG("\x1b[31mError calling function: %s\x1b[0m", err);
-		if (successful == 2) {
-			indent_log(-10);
-			LOG("\x1b[33mThe cake has been cancelled.\x1b[0m");
-		}
+		print("\x1b[31mError calling function: %s\x1b[0m", err);
 		indent_log(-1);
 		lua_pop(L, 1);
 		build_cleanup();
@@ -218,4 +227,38 @@ void build(lua_State* L, const char* target) {
 	}
 	indent_log(-1);
 	lua_pop(L, 1);
+}
+
+int l_bake(lua_State* L) {
+	if (!lua_istable(L, 1)) {
+		return luaL_error(L, "Expected table as argument.");
+	}
+	expand_wildcard_recipes(L);
+
+	lua_pushnil(L);
+	print("\x1b[33mBaking...\x1b[0m");
+	if (args.target_count == 0 || args.keep_defaults == 1) {
+		while (lua_next(L, 1) != 0) {
+			if (lua_type(L, -1) == LUA_TSTRING) {
+				indent_log(1);
+				const char* value = lua_tostring(L, -1);
+				build(L, value);
+				indent_log(-1);
+			}
+			lua_pop(L, 1);
+		}
+	}
+	// forgive me for this warcrime.
+	if (args.target_count >= 1) {
+		for (int i = 0; i < args.target_count; i++) {
+			indent_log(1);
+			build(L, args.targets[i]);
+			indent_log(-1);
+		}
+	}
+
+	build_cleanup();
+
+	print("\x1b[33mCake is finished.\x1b[0m");
+	return 0;
 }
